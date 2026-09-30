@@ -20,8 +20,11 @@ allows copying, opening, or downloading.
   and lists video/audio streams; the number of found media is shown on the icon.
   - direct files (MP4, WebM, MOV, MP3, ...) are downloaded as-is,
   - **HLS** (`.m3u8`) streams let you pick a quality; segments are downloaded,
-    AES-128 decrypted if needed, and joined into a single `.ts` / `.mp4` file,
-  - **DASH** (`.mpd`) and DRM-protected streams can't be downloaded - the URL can be copied (e.g. for yt-dlp).
+    AES-128 decrypted if needed, and joined into a single `.ts` / `.mp4` file. Segments are handed to
+    Chrome's blob storage as they arrive (paged to disk), so long videos don't need to fit in RAM.
+    A failed segment doesn't stop the download - at the end you can retry the missing ones or save anyway,
+  - **DASH** (`.mpd`) can't be downloaded - the URL can be copied (e.g. for yt-dlp).
+  - **DRM**-protected video (Widevine, PlayReady, FairPlay) is detected and marked; it can't be downloaded.
   - **YouTube** isn't supported (same as VideoDownloadHelper in Chrome) - it streams video and audio
     as small token-protected chunks. The popup offers a ready-to-copy `yt-dlp` command instead.
 

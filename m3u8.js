@@ -15,6 +15,14 @@ function parseByteRange(str, prevEnd) {
   return { start, end: start + parseInt(len, 10) - 1 };
 }
 
+// Plain AES-128 with a key from a URL is ordinary encryption; anything else (SAMPLE-AES, Widevine,
+// FairPlay, PlayReady key formats) is DRM, which the extension can't and won't decrypt.
+function isDrmKey(attrs) {
+  if (!attrs.METHOD || attrs.METHOD === "NONE") return false;
+  const format = (attrs.KEYFORMAT || "identity").toLowerCase();
+  return attrs.METHOD !== "AES-128" || format !== "identity" || /^skd:/i.test(attrs.URI || "");
+}
+
 function parseM3U8(text, baseUrl) {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lines[0] !== "#EXTM3U") throw new Error("Neplatný HLS playlist");
@@ -46,7 +54,10 @@ function parseM3U8(text, baseUrl) {
         isDefault: a.DEFAULT === "YES",
       }));
     variants.sort((a, b) => b.bandwidth - a.bandwidth);
-    return { type: "master", variants, audio };
+    const drm = lines
+      .filter((l) => l.startsWith("#EXT-X-SESSION-KEY:"))
+      .some((l) => isDrmKey(parseM3U8Attrs(l.slice(19))));
+    return { type: "master", variants, audio, drm };
   }
 
   const segments = [];
@@ -58,6 +69,7 @@ function parseM3U8(text, baseUrl) {
   let pendingRange = null;
   let lastRangeEnd = 0;
   let endList = false;
+  let drm = false;
 
   for (const line of lines) {
     if (line.startsWith("#EXT-X-MEDIA-SEQUENCE:")) {
@@ -68,6 +80,7 @@ function parseM3U8(text, baseUrl) {
       pendingRange = parseByteRange(line.slice(17), lastRangeEnd);
     } else if (line.startsWith("#EXT-X-KEY:")) {
       const a = parseM3U8Attrs(line.slice(11));
+      if (isDrmKey(a)) drm = true;
       if (a.METHOD === "NONE") key = null;
       else if (a.METHOD === "AES-128") key = { method: a.METHOD, uri: abs(a.URI), iv: a.IV || null };
       else key = { method: a.METHOD };
@@ -92,5 +105,5 @@ function parseM3U8(text, baseUrl) {
   }
 
   const fmp4 = !!map || segments.some((s) => /\.(m4s|mp4|m4v|cmfv)(?:$|\?)/i.test(s.url));
-  return { type: "media", segments, map, duration, live: !endList, container: fmp4 ? "mp4" : "ts" };
+  return { type: "media", segments, map, duration, live: !endList, container: fmp4 ? "mp4" : "ts", drm };
 }

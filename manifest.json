@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VytáhniTo",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Vytáhne to.. obrázky a videa ze stránky včetně těch zabezpečených proti stažení, ignoruje loga a metadata.",
   "icons": {
     "16": "icons/icon16.png",

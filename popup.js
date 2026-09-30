@@ -100,6 +100,7 @@ function extractVideos() {
   const MEDIA_LINK = /\.(mp4|m4v|webm|mov|mkv|ogv|m3u8|mpd|mp3|m4a|ogg|opus|wav|flac)(?:$|[?#])/i;
   const found = new Map();
   let blobPlayers = 0;
+  let drmPlayers = 0;
 
   function add(url, info) {
     if (!url) return;
@@ -118,6 +119,7 @@ function extractVideos() {
   }
 
   document.querySelectorAll("video, audio").forEach((v) => {
+    if (v.mediaKeys) drmPlayers++; // Encrypted Media Extensions in use = DRM (Widevine/PlayReady)
     const info = {
       width: v.videoWidth || 0,
       height: v.videoHeight || 0,
@@ -141,7 +143,7 @@ function extractVideos() {
     if (MEDIA_LINK.test(a.href)) add(a.href, {});
   });
 
-  return { items: Array.from(found.values()), blobPlayers };
+  return { items: Array.from(found.values()), blobPlayers, drmPlayers };
 }
 
 const statusEl = document.getElementById("status");
@@ -240,6 +242,7 @@ const vidListEl = document.getElementById("vidList");
 const imgCountEl = document.getElementById("imgCount");
 const vidCountEl = document.getElementById("vidCount");
 const vidNoticeEl = document.getElementById("vidNotice");
+const drmNoticeEl = document.getElementById("drmNotice");
 const ytCmdEl = document.getElementById("ytCmd");
 
 document.getElementById("copyYtCmd").addEventListener("click", () => navigator.clipboard.writeText(ytCmdEl.textContent));
@@ -248,6 +251,7 @@ let currentTabId = null;
 let currentUrl = "";
 let domVideos = [];
 let blobPlayers = 0;
+let drmPlayers = 0;
 let videoEntries = [];
 let jobs = {};
 const playlists = new Map(); // hls url -> Promise<parsed playlist | null>
@@ -445,6 +449,13 @@ function renderVideoRow(entry, index) {
   badge.className = "badge badge-" + entry.kind;
   badge.textContent = entry.kind === "file" ? fileExt(entry).toUpperCase() : entry.kind.toUpperCase();
   meta.appendChild(badge);
+  const drm = !!(pl && pl.drm);
+  if (drm) {
+    const drmBadge = document.createElement("span");
+    drmBadge.className = "badge badge-drm";
+    drmBadge.textContent = "DRM";
+    meta.append(" ", drmBadge);
+  }
   meta.appendChild(document.createTextNode(" " + details.filter(Boolean).join(" · ")));
   body.appendChild(meta);
 
@@ -468,7 +479,10 @@ function renderVideoRow(entry, index) {
   const dlBtn = document.createElement("button");
   dlBtn.className = "primary";
   dlBtn.textContent = "Stáhnout";
-  if (entry.kind === "dash") {
+  if (drm) {
+    dlBtn.disabled = true;
+    dlBtn.title = "Video je chráněné DRM - nelze stáhnout";
+  } else if (entry.kind === "dash") {
     dlBtn.disabled = true;
     dlBtn.title = "DASH zatím není podporován - zkopírujte URL (např. pro yt-dlp)";
   } else if (entry.kind === "hls" && !pl) {
@@ -502,6 +516,18 @@ function renderVideoRow(entry, index) {
   progress.append(bar, progressText);
   body.appendChild(progress);
 
+  const partialActions = document.createElement("div");
+  partialActions.className = "partial-actions";
+  partialActions.hidden = true;
+  const retryBtn = document.createElement("button");
+  retryBtn.textContent = "Zkusit znovu";
+  retryBtn.title = "Znovu stáhnout jen chybějící segmenty";
+  const savePartialBtn = document.createElement("button");
+  savePartialBtn.textContent = "Uložit i tak";
+  savePartialBtn.title = "Uložit bez chybějících segmentů (ve videu budou krátké výpadky)";
+  partialActions.append(retryBtn, savePartialBtn);
+  body.appendChild(partialActions);
+
   row.appendChild(body);
 
   if (dlBtn.disabled) return row;
@@ -518,26 +544,42 @@ function renderVideoRow(entry, index) {
     return row;
   }
 
-  let running = false;
-  dlBtn.addEventListener("click", () => (running ? cancelHlsDownload(entry) : startHlsDownload(entry, index)));
+  const jobIds = [entry.url, entry.url + "#audio"];
+  const partialIds = () => jobIds.filter((id) => jobs[id] && jobs[id].state === "partial");
+  const sendToJobs = (type, ids) => ids.forEach((jobId) => chrome.runtime.sendMessage({ target: "background", type, jobId }));
+  retryBtn.addEventListener("click", () => sendToJobs("hls-retry", partialIds()));
+  savePartialBtn.addEventListener("click", () => sendToJobs("hls-save-partial", partialIds()));
+
+  let active = false;
+  dlBtn.addEventListener("click", () => (active ? cancelHlsDownload(entry) : startHlsDownload(entry, index)));
 
   const update = () => {
-    const job = jobs[entry.url];
-    running = !!job && job.state === "running";
-    dlBtn.textContent = running ? "Zrušit" : "Stáhnout";
+    const audioJob = jobs[entry.url + "#audio"];
+    let job = jobs[entry.url];
+    // Once the video is done, surface a partially failed audio track instead.
+    if (job && job.state === "done" && audioJob && audioJob.state === "partial") job = audioJob;
+    active = jobIds.some((id) => jobs[id] && (jobs[id].state === "running" || jobs[id].state === "partial"));
+    dlBtn.textContent = active ? "Zrušit" : "Stáhnout";
     progress.hidden = !job;
+    partialActions.hidden = !partialIds().length;
     if (!job) return;
     progress.classList.toggle("error", job.state === "error");
+    progress.classList.toggle("warn", job.state === "partial");
     const pct = job.total ? Math.round((job.done / job.total) * 100) : 0;
     fill.style.width = (job.state === "done" ? 100 : pct) + "%";
-    const audioNote = jobs[entry.url + "#audio"] ? " (+ zvuk zvlášť)" : "";
+    const audioNote = audioJob ? " (+ zvuk zvlášť)" : "";
     if (job.state === "error") progressText.textContent = "Chyba: " + job.error;
     else if (job.state === "done") progressText.textContent = "Hotovo" + audioNote;
+    else if (job.state === "partial") {
+      const what = job === audioJob ? "zvuku" : "videa";
+      progressText.textContent = `Nepodařilo se stáhnout ${job.failed} z ${job.total} segmentů ${what}`;
+    }
     else if (!job.total) progressText.textContent = "Připravuji…";
     else {
       const stats = [`${pct} %`, formatSize(job.bytes)];
       if (job.speed) stats.push(`${formatSize(job.speed)}/s`);
       if (job.eta && job.done > 2) stats.push(`zbývá ${formatDuration(job.eta)}`);
+      if (job.failed) stats.push(`${job.failed} chyb`);
       progressText.textContent = stats.filter(Boolean).join(" · ") + audioNote;
     }
   };
@@ -557,6 +599,7 @@ function renderVideos() {
   vidCountEl.textContent = videoEntries.length ? `(${videoEntries.length})` : "";
   const youtube = isYouTube(currentHost);
   vidNoticeEl.hidden = !youtube;
+  drmNoticeEl.hidden = !drmPlayers || youtube;
   if (youtube) ytCmdEl.textContent = `yt-dlp "${currentUrl}"`;
   if (!videoEntries.length) {
     vidStatusEl.hidden = youtube;
@@ -731,6 +774,7 @@ async function scan() {
   let imageItems = [];
   domVideos = [];
   blobPlayers = 0;
+  drmPlayers = 0;
 
   // Network-sniffed media doesn't depend on the page scan, so list it right away.
   const earlyVideos = refreshVideos();
@@ -756,6 +800,7 @@ async function scan() {
       if (!r) continue;
       domVideos.push(...r.items);
       blobPlayers += r.blobPlayers;
+      drmPlayers += r.drmPlayers;
     }
   } catch (e) {
     statusEl.textContent = "Na této stránce nelze skenovat.";

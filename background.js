@@ -195,12 +195,32 @@ chrome.runtime.onMessage.addListener((msg) => {
         })
         .catch((e) => setJob(msg.jobId, { state: "error", error: String(e.message || e) }));
       break;
+    case "hls-retry":
+    case "hls-save-partial": {
+      if (msg.type === "hls-retry") setJob(msg.jobId, { state: "running" });
+      const type = msg.type === "hls-retry" ? "retry" : "save-partial";
+      // After a browser restart the offscreen document is gone; recreating it lets it report the job as lost.
+      ensureOffscreen()
+        .then(() => chrome.runtime.sendMessage({ target: "offscreen", type, jobId: msg.jobId }))
+        .catch((e) => setJob(msg.jobId, { state: "error", error: String(e.message || e) }));
+      break;
+    }
     case "hls-cancel":
       chrome.runtime.sendMessage({ target: "offscreen", type: "cancel", jobId: msg.jobId }).catch(() => {});
       setJob(msg.jobId, null);
       break;
     case "job-progress":
-      setJob(msg.jobId, { done: msg.done, total: msg.total, bytes: msg.bytes, speed: msg.speed, eta: msg.eta });
+      setJob(msg.jobId, {
+        done: msg.done,
+        total: msg.total,
+        bytes: msg.bytes,
+        speed: msg.speed,
+        eta: msg.eta,
+        failed: msg.failed,
+      });
+      break;
+    case "job-partial":
+      setJob(msg.jobId, { state: "partial", done: msg.done, total: msg.total, failed: msg.failed, speed: 0, eta: 0 });
       break;
     case "job-error":
       setJob(msg.jobId, { state: "error", error: msg.error });

@@ -321,7 +321,8 @@ header .icon-btn.active {
   background: #e66;
 }
 
-#vidNotice {
+#vidNotice,
+.notice {
   margin: 8px;
   padding: 8px 10px;
   background: #2a2b2e;
@@ -458,5 +459,36 @@ header .icon-btn.active {
 }
 
 #resetSettings:hover {
+  background: #2f5bd0;
+}
+
+.badge-drm { background: #c0392b; }
+
+.video .progress.warn {
+  color: #e0a040;
+}
+
+.video .progress.warn .bar div {
+  background: #e0a040;
+}
+
+.video .partial-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.video .partial-actions button {
+  background: #3a3b3f;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  height: 20px;
+  padding: 0 8px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.video .partial-actions button:hover {
   background: #2f5bd0;
 }
