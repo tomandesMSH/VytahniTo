@@ -4,6 +4,8 @@ A Chrome extension that pulls every real image off the current page - including
 ones protected against right-click saving.
 allows copying, opening, or downloading.
 
+![Preview](/preview.png)
+
 ## Features
 
 - **Smart extraction** - scans `<img>` elements (including lazy-loaded and
