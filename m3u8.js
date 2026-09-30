@@ -25,7 +25,7 @@ function isDrmKey(attrs) {
 
 function parseM3U8(text, baseUrl) {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  if (lines[0] !== "#EXTM3U") throw new Error("Neplatný HLS playlist");
+  if (lines[0] !== "#EXTM3U") throw new Error("err.invalidPlaylist");
   const abs = (u) => new URL(u, baseUrl).href;
 
   if (lines.some((l) => l.startsWith("#EXT-X-STREAM-INF:"))) {

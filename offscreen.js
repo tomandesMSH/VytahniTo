@@ -1,4 +1,5 @@
 // Offscreen document: downloads HLS segments, decrypts AES-128, joins them into one blob.
+// Errors are thrown as i18n keys ("err.*"), translated by the popup.
 
 const CONCURRENCY = 6; // Chrome opens at most 6 HTTP/1.1 connections per host, more wouldn't help
 const RETRIES = 4;
@@ -151,13 +152,13 @@ async function runJob({ jobId, url, filename, saveAs }) {
   try {
     let playlist = parseM3U8(await fetchWithRetry(url, { signal, as: "text" }), url);
     if (playlist.type === "master") {
-      if (playlist.drm) throw new Error("Video je chráněné DRM - nelze stáhnout");
-      if (!playlist.variants.length) throw new Error("Playlist neobsahuje žádné varianty");
+      if (playlist.drm) throw new Error("err.drm");
+      if (!playlist.variants.length) throw new Error("err.noVariants");
       const variantUrl = playlist.variants[0].url;
       playlist = parseM3U8(await fetchWithRetry(variantUrl, { signal, as: "text" }), variantUrl);
     }
-    if (playlist.drm) throw new Error("Video je chráněné DRM - nelze stáhnout");
-    if (!playlist.segments.length) throw new Error("Playlist neobsahuje žádné segmenty");
+    if (playlist.drm) throw new Error("err.drm");
+    if (!playlist.segments.length) throw new Error("err.noSegments");
 
     job.segments = playlist.segments;
     job.container = playlist.container;
@@ -175,7 +176,7 @@ async function runJob({ jobId, url, filename, saveAs }) {
 }
 
 function sendGone(jobId) {
-  send({ type: "job-error", jobId, error: "Rozpracované stahování už není k dispozici, spusťte ho znovu" });
+  send({ type: "job-error", jobId, error: "err.jobLost" });
 }
 
 async function retryJob(jobId) {

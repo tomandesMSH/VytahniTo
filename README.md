@@ -15,7 +15,8 @@ allows copying, opening, or downloading.
 - **Download all** - grabs every found image at once and organizes it into a folder.
 - **Settings** (⚙ in the popup) - main folder, split downloads by site (`VytahniTo/YouTube/…`),
   by page (`VytahniTo/iDNES/<page title>/…`) or not at all, ask where to save, minimum image size,
-  logo/icon filter and the video count on the icon. Settings sync across your Chrome profiles.
+  logo/icon filter, the video count on the icon and the UI language (Czech / English, defaults to
+  the browser language). Settings sync across your Chrome profiles.
 - **Videos** (inspired by VideoDownloadHelper) - watches the page's network traffic
   and lists video/audio streams; the number of found media is shown on the icon.
   - direct files (MP4, WebM, MOV, MP3, ...) are downloaded as-is,

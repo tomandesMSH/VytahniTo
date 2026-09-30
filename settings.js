@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS = {
   minImageSize: 100, // px, smaller images are skipped
   skipNoise: true, // skip logos, icons and images in header/footer/nav
   videoBadge: true, // show number of found videos on the extension icon
+  language: /^cs/i.test(navigator.language) ? "cs" : "en", // "cs" | "en"
 };
 
 async function loadSettings() {
@@ -51,8 +52,8 @@ const KNOWN_SITES = {
 const SECOND_LEVEL = new Set(["co", "com", "org", "net", "gov", "ac", "edu"]);
 
 // "www.youtube.com" -> "YouTube", "shop.example.co.uk" -> "Example"
-function siteName(host) {
-  if (!host) return "Ostatní";
+function siteName(host, language) {
+  if (!host) return language === "en" ? "Other" : "Ostatní";
   if (/^[\d.]+$/.test(host) || host.includes(":")) return host; // IP address
   const labels = host.toLowerCase().split(".");
   let i = labels.length - 2;
@@ -72,8 +73,8 @@ function sanitizePathPart(part) {
 
 function downloadFolder(settings, host, pageTitle) {
   const parts = settings.rootFolder.split(/[/\\]/);
-  if (settings.subfolder === "site" || settings.subfolder === "page") parts.push(siteName(host));
-  if (settings.subfolder === "page") parts.push(pageTitle || "Bez názvu");
+  if (settings.subfolder === "site" || settings.subfolder === "page") parts.push(siteName(host, settings.language));
+  if (settings.subfolder === "page") parts.push(pageTitle || (settings.language === "en" ? "Untitled" : "Bez názvu"));
   return parts.map(sanitizePathPart).filter(Boolean).join("/");
 }
 

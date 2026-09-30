@@ -9,78 +9,81 @@
   <header>
     <img src="icons/icon32.png" alt="" id="logo" />
     <h1>VytáhniTo</h1>
-    <button id="rescan" class="icon-btn" title="Znovu skenovat">↻</button>
-    <button id="openSettings" class="icon-btn" title="Nastavení">⚙</button>
+    <button id="rescan" class="icon-btn" data-i18n-title="rescan">↻</button>
+    <button id="openSettings" class="icon-btn" data-i18n-title="settings">⚙</button>
   </header>
 
   <nav id="tabs">
-    <button class="tab active" data-panel="images">Obrázky <span id="imgCount"></span></button>
-    <button class="tab" data-panel="videos">Videa <span id="vidCount"></span></button>
+    <button class="tab active" data-panel="images"><span data-i18n="tabImages"></span> <span id="imgCount"></span></button>
+    <button class="tab" data-panel="videos"><span data-i18n="tabVideos"></span> <span id="vidCount"></span></button>
   </nav>
 
   <section id="images" class="panel">
     <div id="toolbar" hidden>
       <span id="count"></span>
-      <button id="downloadAll">Stáhnout vše</button>
+      <button id="downloadAll" data-i18n="downloadAll"></button>
     </div>
-    <div id="status">Skenuji...</div>
+    <div id="status" data-i18n="scanning"></div>
     <div id="grid"></div>
   </section>
 
   <section id="videos" class="panel" hidden>
     <div id="vidNotice" hidden>
-      <p>YouTube posílá video po malých kouscích (obraz a zvuk zvlášť) chráněných tokeny,
-        takže ho rozšíření v prohlížeči stáhnout neumí. Použijte
+      <p><span data-i18n="ytNotice"></span>
         <a href="https://github.com/yt-dlp/yt-dlp" target="_blank">yt-dlp</a>:</p>
       <div class="cmd">
         <code id="ytCmd"></code>
-        <button id="copyYtCmd" title="Kopírovat příkaz">⧉</button>
+        <button id="copyYtCmd" data-i18n-title="copyCommand">⧉</button>
       </div>
     </div>
-    <div id="drmNotice" class="notice" hidden>
-      Přehrávač na této stránce používá ochranu DRM (Widevine / PlayReady). Takto chráněné video
-      rozšíření stáhnout nemůže - data dostává zašifrovaná a klíč zná jen přehrávač.
-    </div>
-    <div id="vidStatus">Skenuji...</div>
+    <div id="drmNotice" class="notice" data-i18n="drmNotice" hidden></div>
+    <div id="vidStatus" data-i18n="scanning"></div>
     <div id="vidList"></div>
   </section>
 
   <section id="settings" class="panel" hidden>
     <form id="settingsForm">
-      <h2>Ukládání</h2>
+      <h2 data-i18n="sectionLanguage"></h2>
+      <div class="field">
+        <label class="option"><input type="radio" name="language" value="cs" /> Čeština</label>
+        <label class="option"><input type="radio" name="language" value="en" /> English</label>
+      </div>
+
+      <h2 data-i18n="sectionSaving"></h2>
       <label class="field">
-        <span>Hlavní složka</span>
-        <input type="text" name="rootFolder" placeholder="(přímo do Stažených souborů)" />
+        <span data-i18n="rootFolder"></span>
+        <input type="text" name="rootFolder" data-i18n-placeholder="rootFolderPlaceholder" />
       </label>
 
       <div class="field">
-        <span>Rozdělit do složek</span>
-        <label class="option"><input type="radio" name="subfolder" value="site" /> Podle webu <small>YouTube, iDNES…</small></label>
-        <label class="option"><input type="radio" name="subfolder" value="page" /> Každou stránku zvlášť <small>web / název stránky</small></label>
-        <label class="option"><input type="radio" name="subfolder" value="none" /> Nerozdělovat</label>
+        <span data-i18n="splitFolders"></span>
+        <label class="option"><input type="radio" name="subfolder" value="site" /> <span data-i18n="bySite"></span> <small data-i18n="bySiteHint"></small></label>
+        <label class="option"><input type="radio" name="subfolder" value="page" /> <span data-i18n="byPage"></span> <small data-i18n="byPageHint"></small></label>
+        <label class="option"><input type="radio" name="subfolder" value="none" /> <span data-i18n="noSplit"></span></label>
       </div>
 
-      <div class="path-preview">Uloží se jako: <code id="pathPreview"></code></div>
+      <div class="path-preview"><span data-i18n="savedAs"></span> <code id="pathPreview"></code></div>
 
       <label class="option">
-        <input type="checkbox" name="saveAs" /> Ptát se, kam uložit
-        <small>(jen u jednotlivých souborů, ne u „Stáhnout vše“)</small>
+        <input type="checkbox" name="saveAs" /> <span data-i18n="askWhere"></span>
+        <small data-i18n="askWhereHint"></small>
       </label>
 
-      <h2>Obrázky</h2>
+      <h2 data-i18n="sectionImages"></h2>
       <label class="field inline">
-        <span>Minimální velikost</span>
+        <span data-i18n="minSize"></span>
         <input type="number" name="minImageSize" min="0" max="4000" step="10" /> px
       </label>
-      <label class="option"><input type="checkbox" name="skipNoise" /> Skrývat loga, ikony a obrázky z hlavičky a patičky</label>
+      <label class="option"><input type="checkbox" name="skipNoise" /> <span data-i18n="skipNoise"></span></label>
 
-      <h2>Videa</h2>
-      <label class="option"><input type="checkbox" name="videoBadge" /> Zobrazovat počet nalezených videí na ikoně</label>
+      <h2 data-i18n="sectionVideos"></h2>
+      <label class="option"><input type="checkbox" name="videoBadge" /> <span data-i18n="videoBadge"></span></label>
 
-      <button type="button" id="resetSettings">Obnovit výchozí</button>
+      <button type="button" id="resetSettings" data-i18n="resetSettings"></button>
     </form>
   </section>
 
+  <script src="i18n.js"></script>
   <script src="settings.js"></script>
   <script src="m3u8.js"></script>
   <script src="popup.js"></script>

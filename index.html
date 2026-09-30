@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="cs" data-lang="cs">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -142,24 +142,57 @@
   footer .dedication {
     font-style: italic;
   }
+
+  header.hero > div:not(.lang-switch) { flex: 1; }
+
+  .lang-switch {
+    display: flex;
+    align-self: flex-start;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .lang-switch button {
+    background: var(--bg-panel);
+    color: var(--text-dim);
+    border: none;
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .lang-switch button + button { border-left: 1px solid var(--border); }
+  .lang-switch button:hover { color: var(--text); }
+  .lang-switch button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+  /* Only the active language is shown. */
+  html[data-lang="cs"] body [lang="en"],
+  html[data-lang="en"] body [lang="cs"] { display: none; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header class="hero">
-    <img src="logo.png" alt="Logo VytáhniTo" />
+    <img src="logo.png" alt="VytáhniTo" />
     <div>
       <h1>VytáhniTo</h1>
-      <p class="tagline">Rozšíření pro Chrome, které vytáhne všechny obrázky a videa ze stránky - i ty zabezpečené proti stažení.</p>
+      <p class="tagline" lang="cs">Rozšíření pro Chrome, které vytáhne všechny obrázky a videa ze stránky - i ty zabezpečené proti stažení.</p>
+      <p class="tagline" lang="en">A Chrome extension that pulls every image and video off a page - including ones protected against downloading.</p>
+    </div>
+    <div class="lang-switch" role="group" aria-label="Jazyk / Language">
+      <button type="button" data-set-lang="cs">CS</button>
+      <button type="button" data-set-lang="en">EN</button>
     </div>
   </header>
 
   <section>
-    <img class="preview" src="preview.png" alt="Náhled rozšíření VytáhniTo" />
+    <img class="preview" src="preview.png" alt="Náhled / Preview" />
   </section>
 
-  <section>
+  <section lang="cs">
     <h2>O čem to je</h2>
     <p>
       VytáhniTo je jednoduché rozšíření pro prohlížeče založené na Chromiu.
@@ -175,23 +208,54 @@
       Počet nalezených médií se zobrazuje přímo na ikoně rozšíření.
     </p>
   </section>
+  <section lang="en">
+    <h2>What it is</h2>
+    <p>
+      VytáhniTo is a simple extension for Chromium-based browsers. Click its
+      icon and it scans the current page for every real image - including ones
+      the site hides behind lazy-loading, CSS backgrounds or right-click
+      protection. The results are shown in a clear grid where you can open
+      the images, copy their address, or download them straight away.
+    </p>
+    <p>
+      The <strong>Videos</strong> tab works much like VideoDownloadHelper:
+      it watches the page's network traffic and captures the videos and streams
+      being played. The number of found media is shown right on the extension icon.
+    </p>
+  </section>
 
-  <section>
+  <section lang="cs">
     <h2>Funkce</h2>
     <ul class="features">
-      <li><strong>Chytrá extrakce</strong> - prochází <code>&lt;img&gt;</code> prvky (včetně lazy-loaded a <code>srcset</code> variant) i <code>background-image</code>.</li>
-      <li><strong>Filtr</strong> - přeskakuje malé obrázky a vše, co vypadá jako logo, ikona nebo sledovací pixel.</li>
+      <li><strong>Chytrá extrakce</strong> - prochází <code>&lt;img&gt;</code> prvky (včetně lazy-loaded a <code>srcset</code> variant) i <code>background-image</code>, a to i ve vložených rámcích (iframe).</li>
+      <li><strong>Filtr</strong> - přeskakuje malé obrázky, vše, co vypadá jako logo, ikona nebo sledovací pixel, a obrázky z hlavičky, patičky a navigace.</li>
       <li><strong>Výběr nejlepší kvality</strong> - pokud se stejný obrázek objeví vícekrát, ponechá se jeho nejkvalitnější varianta.</li>
-      <li><strong>Stáhnout vše</strong> - jedním kliknutím stáhne všechny nalezené obrázky a uspořádá je do složky podle domény.</li>
-      <li><strong>Videa</strong> - zachytí přímé soubory (MP4, WebM, MP3…) i <strong>HLS</strong> streamy (<code>.m3u8</code>). U HLS lze vybrat kvalitu; segmenty se stáhnou, případně dešifrují (AES-128) a spojí do jednoho souboru <code>.ts</code> / <code>.mp4</code>. Segmenty se průběžně odkládají mimo paměť stránky, takže projdou i dlouhé filmy. Když některý segment selže, stahování pokračuje a na konci lze chybějící <strong>zkusit znovu</strong> nebo video <strong>uložit i tak</strong>.</li>
+      <li><strong>Stáhnout vše</strong> - jedním kliknutím stáhne všechny nalezené obrázky a uspořádá je do složek podle nastavení (např. podle webu).</li>
+      <li><strong>Videa</strong> - sleduje síťový provoz i prvky <code>&lt;video&gt;</code>, <code>&lt;audio&gt;</code> a odkazy na mediální soubory. Zachytí přímé soubory (MP4, WebM, MOV, MP3…), které se stáhnou tak, jak jsou. Nalezená videa si pamatuje pro každou záložku, dokud z ní neodejdete.</li>
+      <li><strong>HLS streamy</strong> (<code>.m3u8</code>) - lze vybrat kvalitu; segmenty se stáhnou, případně dešifrují (AES-128) a spojí do jednoho souboru <code>.ts</code> / <code>.mp4</code>. Má-li stream zvuk zvlášť, uloží se jako druhý soubor (<code>…_audio</code>). Průběh ukazuje procenta, rychlost a zbývající čas a stahování běží na pozadí i po zavření okna rozšíření. Segmenty se průběžně odkládají mimo paměť, takže projdou i dlouhé filmy. Když některý segment selže, stahování pokračuje a na konci lze chybějící <strong>zkusit znovu</strong> nebo video <strong>uložit i tak</strong>.</li>
       <li><strong>DASH a DRM</strong> - streamy <code>.mpd</code> stáhnout nelze, jejich URL lze ale zkopírovat (např. pro yt-dlp). Video chráněné DRM (Widevine, PlayReady, FairPlay) rozšíření rozpozná, označí a vysvětlí, proč ho stáhnout nejde.</li>
       <li><strong>YouTube</strong> - není podporován (stejně jako u VideoDownloadHelperu v Chromu), protože video posílá po malých kouscích chráněných tokeny. Rozšíření místo toho nabídne příkaz pro <code>yt-dlp</code> ke zkopírování.</li>
-      <li><strong>Nastavení</strong> - pod ikonou ⚙: hlavní složka, rozdělení do složek podle webu (<code>VytahniTo/YouTube/…</code>), podle stránky (<code>VytahniTo/iDNES/název stránky/…</code>) nebo vůbec, dotaz kam uložit, minimální velikost obrázků, filtr log a ikon a počet videí na ikoně.</li>
-      <li><strong>Rychlé akce</strong> - u každého obrázku lze jej otevřít v nové záložce, zkopírovat URL nebo stáhnout jednotlivě.</li>
+      <li><strong>Nastavení</strong> - pod ikonou ⚙: jazyk rozhraní (čeština / angličtina, výchozí podle prohlížeče), hlavní složka, rozdělení do složek podle webu (<code>VytahniTo/YouTube/…</code>), podle stránky (<code>VytahniTo/iDNES/název stránky/…</code>) nebo vůbec, dotaz kam uložit, minimální velikost obrázků, filtr log a ikon a počet videí na ikoně. Nastavení se synchronizuje mezi prohlížeči přihlášenými ke stejnému účtu Chrome.</li>
+      <li><strong>Rychlé akce</strong> - u každého obrázku i videa lze jej otevřít v nové záložce, zkopírovat URL nebo stáhnout jednotlivě.</li>
+    </ul>
+  </section>
+  <section lang="en">
+    <h2>Features</h2>
+    <ul class="features">
+      <li><strong>Smart extraction</strong> - scans <code>&lt;img&gt;</code> elements (including lazy-loaded and <code>srcset</code> variants) as well as <code>background-image</code>, even inside embedded frames (iframes).</li>
+      <li><strong>Filter</strong> - skips tiny images, anything that looks like a logo, icon or tracking pixel, and images in the page header, footer and navigation.</li>
+      <li><strong>Best quality pick</strong> - when the same image appears multiple times, its highest-quality variant is kept.</li>
+      <li><strong>Download all</strong> - one click downloads every found image and sorts it into folders according to your settings (e.g. by website).</li>
+      <li><strong>Videos</strong> - watches network traffic as well as <code>&lt;video&gt;</code> and <code>&lt;audio&gt;</code> elements and links to media files. Direct files (MP4, WebM, MOV, MP3…) are downloaded as they are. Found videos are remembered for each tab until you navigate away.</li>
+      <li><strong>HLS streams</strong> (<code>.m3u8</code>) - pick a quality; segments are downloaded, AES-128 decrypted if needed, and joined into a single <code>.ts</code> / <code>.mp4</code> file. If the stream has separate audio, it's saved as a second file (<code>…_audio</code>). Progress shows percentage, speed and time left, and the download keeps running in the background after the extension window closes. Segments are moved out of memory as they arrive, so even long movies work. If a segment fails, the download carries on and at the end you can <strong>retry</strong> the missing ones or <strong>save anyway</strong>.</li>
+      <li><strong>DASH and DRM</strong> - <code>.mpd</code> streams can't be downloaded, but their URL can be copied (e.g. for yt-dlp). DRM-protected video (Widevine, PlayReady, FairPlay) is detected and marked, and the extension explains why it can't be downloaded.</li>
+      <li><strong>YouTube</strong> - not supported (same as VideoDownloadHelper in Chrome), because it streams video in small token-protected chunks. The extension offers a ready-to-copy <code>yt-dlp</code> command instead.</li>
+      <li><strong>Settings</strong> - under the ⚙ icon: UI language (Czech / English, defaults to the browser language), main folder, splitting into folders by website (<code>VytahniTo/YouTube/…</code>), by page (<code>VytahniTo/iDNES/page title/…</code>) or not at all, asking where to save, minimum image size, logo and icon filter, and the video count on the icon. Settings sync across browsers signed in to the same Chrome account.</li>
+      <li><strong>Quick actions</strong> - every image and video can be opened in a new tab, have its URL copied, or be downloaded on its own.</li>
     </ul>
   </section>
 
-  <section>
+  <section lang="cs">
     <h2>Instalace</h2>
     <ol class="steps">
       <li>Naklonujte nebo stáhněte tento repozitář.</li>
@@ -200,8 +264,17 @@
       <li>Klikněte na <strong>Načíst rozbalené</strong> (Load unpacked) a vyberte složku projektu.</li>
     </ol>
   </section>
+  <section lang="en">
+    <h2>Installation</h2>
+    <ol class="steps">
+      <li>Clone or download this repository.</li>
+      <li>Open <code>chrome://extensions</code> in your browser.</li>
+      <li>Turn on <strong>Developer mode</strong>.</li>
+      <li>Click <strong>Load unpacked</strong> and select the project folder.</li>
+    </ol>
+  </section>
 
-  <section>
+  <section lang="cs">
     <h2>Použití</h2>
     <ol class="steps">
       <li>Otevřete stránku, ze které chcete stáhnout obrázky.</li>
@@ -210,55 +283,108 @@
       <li>Tlačítkem <strong>Stáhnout vše</strong> stáhnete všechny nalezené obrázky najednou.</li>
       <li>Na záložce <strong>Videa</strong> vyberte kvalitu a klikněte na <strong>Stáhnout</strong>. Pokud video v seznamu chybí, spusťte jeho přehrávání - stream se zachytí automaticky.</li>
       <li>Tlačítko <strong>↻</strong> v hlavičce spustí sken znovu (např. po dynamickém načtení obsahu).</li>
+      <li>Tlačítkem <strong>⚙</strong> otevřete nastavení - zde lze přepnout jazyk a náhled ukáže, kam se soubory uloží. Po změně filtrů obrázků se stránka po návratu automaticky přeskenuje.</li>
+    </ol>
+  </section>
+  <section lang="en">
+    <h2>Usage</h2>
+    <ol class="steps">
+      <li>Open the page you want to grab images from.</li>
+      <li>Click the VytáhniTo icon in the extensions toolbar - the page is scanned automatically.</li>
+      <li>Hover over an image in the grid to show its actions: open, download, copy URL.</li>
+      <li>The <strong>Download all</strong> button downloads every found image at once.</li>
+      <li>On the <strong>Videos</strong> tab, pick a quality and click <strong>Download</strong>. If a video isn't listed, start playing it - the stream is captured automatically.</li>
+      <li>The <strong>↻</strong> button in the header scans the page again (e.g. after content loads dynamically).</li>
+      <li>The <strong>⚙</strong> button opens the settings - switch the language there, and a preview shows where files will be saved. After changing the image filters, the page is rescanned when you go back.</li>
     </ol>
   </section>
 
   <section>
-    <h2>Oprávnění</h2>
+    <h2><span lang="cs">Oprávnění</span><span lang="en">Permissions</span></h2>
     <table>
       <thead>
-        <tr><th>Oprávnění</th><th>K čemu slouží</th></tr>
+        <tr><th><span lang="cs">Oprávnění</span><span lang="en">Permission</span></th><th><span lang="cs">K čemu slouží</span><span lang="en">What it's for</span></th></tr>
       </thead>
       <tbody>
-        <tr><td><code>activeTab</code></td><td>Přístup k aktivní záložce v okamžiku kliknutí na rozšíření.</td></tr>
-        <tr><td><code>scripting</code></td><td>Vložení skenovacího skriptu do prohlížené stránky.</td></tr>
-        <tr><td><code>downloads</code></td><td>Uložení nalezených obrázků a videí na disk.</td></tr>
-        <tr><td><code>clipboardWrite</code></td><td>Kopírování URL adres obrázků a videí do schránky.</td></tr>
-        <tr><td><code>webRequest</code> + přístup ke všem webům</td><td>Zachycení video streamů, které stránka načítá.</td></tr>
-        <tr><td><code>storage</code></td><td>Zapamatování nalezených videí pro danou záložku a uložení nastavení.</td></tr>
-        <tr><td><code>offscreen</code></td><td>Spojení segmentů HLS streamu do jednoho souboru na pozadí.</td></tr>
+        <tr><td><code>activeTab</code></td><td><span lang="cs">Přístup k aktivní záložce v okamžiku kliknutí na rozšíření.</span><span lang="en">Access to the active tab when you click the extension.</span></td></tr>
+        <tr><td><code>scripting</code></td><td><span lang="cs">Vložení skenovacího skriptu do prohlížené stránky.</span><span lang="en">Injecting the scanning script into the page you're viewing.</span></td></tr>
+        <tr><td><code>downloads</code></td><td><span lang="cs">Uložení nalezených obrázků a videí na disk.</span><span lang="en">Saving found images and videos to disk.</span></td></tr>
+        <tr><td><code>clipboardWrite</code></td><td><span lang="cs">Kopírování URL adres obrázků a videí do schránky.</span><span lang="en">Copying image and video URLs to the clipboard.</span></td></tr>
+        <tr><td><code>webRequest</code> <span lang="cs">+ přístup ke všem webům</span><span lang="en">+ access to all sites</span></td><td><span lang="cs">Zachycení video streamů, které stránka načítá.</span><span lang="en">Detecting the video streams a page loads.</span></td></tr>
+        <tr><td><code>storage</code></td><td><span lang="cs">Zapamatování nalezených videí a průběhu stahování pro danou záložku a uložení nastavení.</span><span lang="en">Remembering found videos and download progress per tab, and keeping your settings.</span></td></tr>
+        <tr><td><code>offscreen</code></td><td><span lang="cs">Spojení segmentů HLS streamu do jednoho souboru na pozadí.</span><span lang="en">Joining HLS stream segments into one file in the background.</span></td></tr>
       </tbody>
     </table>
   </section>
 
   <section>
-    <h2>Struktura projektu</h2>
+    <h2><span lang="cs">Struktura projektu</span><span lang="en">Project structure</span></h2>
     <table>
       <thead>
-        <tr><th>Soubor</th><th>Účel</th></tr>
+        <tr><th><span lang="cs">Soubor</span><span lang="en">File</span></th><th><span lang="cs">Účel</span><span lang="en">Purpose</span></th></tr>
       </thead>
       <tbody>
-        <tr><td><code>manifest.json</code></td><td>Definice rozšíření (Manifest V3), ikony a oprávnění.</td></tr>
-        <tr><td><code>popup.html</code></td><td>Rozložení vyskakovacího okna rozšíření.</td></tr>
-        <tr><td><code>popup.css</code></td><td>Vzhled vyskakovacího okna.</td></tr>
-        <tr><td><code>popup.js</code></td><td>Logika skenování stránky, vykreslení obrázků a videí a stahování.</td></tr>
-        <tr><td><code>background.js</code></td><td>Service worker - zachytává video požadavky a řídí stahování HLS.</td></tr>
-        <tr><td><code>offscreen.html</code>, <code>offscreen.js</code></td><td>Stažení, dešifrování a spojení segmentů HLS streamu.</td></tr>
-        <tr><td><code>settings.js</code></td><td>Nastavení, názvy webů pro složky a skládání cest ke stažení.</td></tr>
-        <tr><td><code>m3u8.js</code></td><td>Parser HLS playlistů.</td></tr>
-        <tr><td><code>icons/</code></td><td>Ikony rozšíření v různých velikostech.</td></tr>
+        <tr><td><code>manifest.json</code></td><td><span lang="cs">Definice rozšíření (Manifest V3), ikony a oprávnění.</span><span lang="en">Extension definition (Manifest V3), icons and permissions.</span></td></tr>
+        <tr><td><code>popup.html</code></td><td><span lang="cs">Rozložení vyskakovacího okna rozšíření.</span><span lang="en">Layout of the extension popup.</span></td></tr>
+        <tr><td><code>popup.css</code></td><td><span lang="cs">Vzhled vyskakovacího okna.</span><span lang="en">Popup styling.</span></td></tr>
+        <tr><td><code>popup.js</code></td><td><span lang="cs">Logika skenování stránky, vykreslení obrázků a videí a stahování.</span><span lang="en">Page scanning, rendering images and videos, and downloading.</span></td></tr>
+        <tr><td><code>background.js</code></td><td><span lang="cs">Service worker - zachytává video požadavky a řídí stahování HLS.</span><span lang="en">Service worker - captures video requests and coordinates HLS downloads.</span></td></tr>
+        <tr><td><code>offscreen.html</code>, <code>offscreen.js</code></td><td><span lang="cs">Stažení, dešifrování a spojení segmentů HLS streamu.</span><span lang="en">Downloading, decrypting and joining HLS stream segments.</span></td></tr>
+        <tr><td><code>settings.js</code></td><td><span lang="cs">Nastavení, názvy webů pro složky a skládání cest ke stažení.</span><span lang="en">Settings, website names for folders, and building download paths.</span></td></tr>
+        <tr><td><code>i18n.js</code></td><td><span lang="cs">Překlady rozhraní (čeština, angličtina).</span><span lang="en">UI translations (Czech, English).</span></td></tr>
+        <tr><td><code>m3u8.js</code></td><td><span lang="cs">Parser HLS playlistů.</span><span lang="en">HLS playlist parser.</span></td></tr>
+        <tr><td><code>icons/</code></td><td><span lang="cs">Ikony rozšíření v různých velikostech.</span><span lang="en">Extension icons in various sizes.</span></td></tr>
       </tbody>
     </table>
   </section>
 
   <footer>
-    <h2>Věnování</h2>
-    <p class="dedication">
+    <h2><span lang="cs">Věnování</span><span lang="en">Dedication</span></h2>
+    <p class="dedication" lang="cs">
       Tento projekt je věnován mému učiteli, kterému byl zablokován pokus
       o kliknutí pravým tlačítkem myši, aby zvětšil obrázek.
+    </p>
+    <p class="dedication" lang="en">
+      This project is dedicated to my teacher, who was blocked from
+      right-clicking an image to enlarge it.
     </p>
   </footer>
 
 </div>
+<script>
+  // Language: saved choice, otherwise the browser language (Czech -> cs, anything else -> en).
+  (function () {
+    var META = {
+      cs: {
+        title: "VytáhniTo - dokumentace",
+        description: "VytáhniTo je rozšíření pro Chrome, které vytáhne všechny obrázky a videa ze stránky - i ty zabezpečené proti stažení.",
+      },
+      en: {
+        title: "VytáhniTo - documentation",
+        description: "VytáhniTo is a Chrome extension that pulls every image and video off a page - including ones protected against downloading.",
+      },
+    };
+    var root = document.documentElement;
+    var buttons = document.querySelectorAll("[data-set-lang]");
+
+    function apply(lang) {
+      root.lang = root.dataset.lang = lang;
+      document.title = META[lang].title;
+      document.querySelector('meta[name="description"]').content = META[lang].description;
+      buttons.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)); });
+    }
+
+    var saved = null;
+    try { saved = localStorage.getItem("lang"); } catch (e) {}
+    apply(META[saved] ? saved : /^cs\b/i.test(navigator.language) ? "cs" : "en");
+
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        apply(b.dataset.setLang);
+        try { localStorage.setItem("lang", b.dataset.setLang); } catch (e) {}
+      });
+    });
+  })();
+</script>
 </body>
 </html>

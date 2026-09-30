@@ -153,6 +153,12 @@ const countEl = document.getElementById("count");
 const rescanBtn = document.getElementById("rescan");
 const downloadAllBtn = document.getElementById("downloadAll");
 
+// Status texts keep their i18n key so a language switch re-translates them.
+function setStatus(el, key) {
+  el.dataset.i18n = key;
+  el.textContent = t(key);
+}
+
 let currentItems = [];
 let currentHost = "page";
 let currentTitle = "";
@@ -185,13 +191,13 @@ function render(items) {
   gridEl.innerHTML = "";
   if (items.length === 0) {
     statusEl.hidden = false;
-    statusEl.textContent = "Na stránce nebyly nalezeny žádné vhodné obrázky.";
+    setStatus(statusEl, "noImages");
     toolbarEl.hidden = true;
     return;
   }
   statusEl.hidden = true;
   toolbarEl.hidden = false;
-  countEl.textContent = `Nalezeno: ${items.length}`;
+  countEl.textContent = t("found", items.length);
 
   items.forEach((item, index) => {
     const div = document.createElement("div");
@@ -208,19 +214,19 @@ function render(items) {
 
     const openBtn = document.createElement("button");
     openBtn.textContent = "↗";
-    openBtn.title = "Otevřít v nové záložce";
+    openBtn.title = t("openInTab");
     openBtn.addEventListener("click", () => chrome.tabs.create({ url: item.url }));
     actions.appendChild(openBtn);
 
     const dlBtn = document.createElement("button");
     dlBtn.textContent = "⭳";
-    dlBtn.title = "Stáhnout";
+    dlBtn.title = t("download");
     dlBtn.addEventListener("click", () => downloadItem(item, index, settings.saveAs));
     actions.appendChild(dlBtn);
 
     const copyBtn = document.createElement("button");
     copyBtn.textContent = "⧉";
-    copyBtn.title = "Kopírovat URL";
+    copyBtn.title = t("copyUrl");
     copyBtn.addEventListener("click", () => navigator.clipboard.writeText(item.url));
     actions.appendChild(copyBtn);
 
@@ -440,8 +446,8 @@ function renderVideoRow(entry, index) {
   if (entry.width && entry.height) details.push(`${entry.width}×${entry.height}`);
   details.push(formatSize(entry.size));
   details.push(formatDuration(entry.duration || (pl && pl.type === "media" ? pl.duration : 0)));
-  if (pl && pl.type === "media" && pl.live) details.push("živě");
-  if (isMaster) details.push(`${pl.variants.length} kvalit`);
+  if (pl && pl.type === "media" && pl.live) details.push(t("live"));
+  if (isMaster) details.push(t("qualities", pl.variants.length));
 
   const meta = document.createElement("div");
   meta.className = "vmeta";
@@ -468,7 +474,7 @@ function renderVideoRow(entry, index) {
       const opt = document.createElement("option");
       opt.value = i;
       const kbps = v.bandwidth ? `${Math.round(v.bandwidth / 1000)} kb/s` : "";
-      opt.textContent = [v.resolution, kbps].filter(Boolean).join(" · ") || `Varianta ${i + 1}`;
+      opt.textContent = [v.resolution, kbps].filter(Boolean).join(" · ") || t("variant", i + 1);
       select.appendChild(opt);
     });
     select.value = selectedVariant.get(entry.url) || 0;
@@ -478,28 +484,28 @@ function renderVideoRow(entry, index) {
 
   const dlBtn = document.createElement("button");
   dlBtn.className = "primary";
-  dlBtn.textContent = "Stáhnout";
+  dlBtn.textContent = t("download");
   if (drm) {
     dlBtn.disabled = true;
-    dlBtn.title = "Video je chráněné DRM - nelze stáhnout";
+    dlBtn.title = t("drmDisabled");
   } else if (entry.kind === "dash") {
     dlBtn.disabled = true;
-    dlBtn.title = "DASH zatím není podporován - zkopírujte URL (např. pro yt-dlp)";
+    dlBtn.title = t("dashDisabled");
   } else if (entry.kind === "hls" && !pl) {
     dlBtn.disabled = true;
-    dlBtn.title = "Playlist se nepodařilo načíst";
+    dlBtn.title = t("playlistFailed");
   }
   actions.appendChild(dlBtn);
 
   const copyBtn = document.createElement("button");
   copyBtn.textContent = "⧉";
-  copyBtn.title = "Kopírovat URL";
+  copyBtn.title = t("copyUrl");
   copyBtn.addEventListener("click", () => navigator.clipboard.writeText(entry.url));
   actions.appendChild(copyBtn);
 
   const openBtn = document.createElement("button");
   openBtn.textContent = "↗";
-  openBtn.title = "Otevřít v nové záložce";
+  openBtn.title = t("openInTab");
   openBtn.addEventListener("click", () => chrome.tabs.create({ url: entry.url }));
   actions.appendChild(openBtn);
 
@@ -520,11 +526,11 @@ function renderVideoRow(entry, index) {
   partialActions.className = "partial-actions";
   partialActions.hidden = true;
   const retryBtn = document.createElement("button");
-  retryBtn.textContent = "Zkusit znovu";
-  retryBtn.title = "Znovu stáhnout jen chybějící segmenty";
+  retryBtn.textContent = t("retry");
+  retryBtn.title = t("retryTitle");
   const savePartialBtn = document.createElement("button");
-  savePartialBtn.textContent = "Uložit i tak";
-  savePartialBtn.title = "Uložit bez chybějících segmentů (ve videu budou krátké výpadky)";
+  savePartialBtn.textContent = t("savePartial");
+  savePartialBtn.title = t("savePartialTitle");
   partialActions.append(retryBtn, savePartialBtn);
   body.appendChild(partialActions);
 
@@ -559,7 +565,7 @@ function renderVideoRow(entry, index) {
     // Once the video is done, surface a partially failed audio track instead.
     if (job && job.state === "done" && audioJob && audioJob.state === "partial") job = audioJob;
     active = jobIds.some((id) => jobs[id] && (jobs[id].state === "running" || jobs[id].state === "partial"));
-    dlBtn.textContent = active ? "Zrušit" : "Stáhnout";
+    dlBtn.textContent = active ? t("cancel") : t("download");
     progress.hidden = !job;
     partialActions.hidden = !partialIds().length;
     if (!job) return;
@@ -567,19 +573,18 @@ function renderVideoRow(entry, index) {
     progress.classList.toggle("warn", job.state === "partial");
     const pct = job.total ? Math.round((job.done / job.total) * 100) : 0;
     fill.style.width = (job.state === "done" ? 100 : pct) + "%";
-    const audioNote = audioJob ? " (+ zvuk zvlášť)" : "";
-    if (job.state === "error") progressText.textContent = "Chyba: " + job.error;
-    else if (job.state === "done") progressText.textContent = "Hotovo" + audioNote;
+    const audioNote = audioJob ? t("audioSeparate") : "";
+    if (job.state === "error") progressText.textContent = t("error", t(job.error));
+    else if (job.state === "done") progressText.textContent = t("done") + audioNote;
     else if (job.state === "partial") {
-      const what = job === audioJob ? "zvuku" : "videa";
-      progressText.textContent = `Nepodařilo se stáhnout ${job.failed} z ${job.total} segmentů ${what}`;
+      progressText.textContent = t(job === audioJob ? "partialAudio" : "partialVideo", job.failed, job.total);
     }
-    else if (!job.total) progressText.textContent = "Připravuji…";
+    else if (!job.total) progressText.textContent = t("preparing");
     else {
       const stats = [`${pct} %`, formatSize(job.bytes)];
       if (job.speed) stats.push(`${formatSize(job.speed)}/s`);
-      if (job.eta && job.done > 2) stats.push(`zbývá ${formatDuration(job.eta)}`);
-      if (job.failed) stats.push(`${job.failed} chyb`);
+      if (job.eta && job.done > 2) stats.push(t("remaining", formatDuration(job.eta)));
+      if (job.failed) stats.push(t("errors", job.failed));
       progressText.textContent = stats.filter(Boolean).join(" · ") + audioNote;
     }
   };
@@ -603,9 +608,7 @@ function renderVideos() {
   if (youtube) ytCmdEl.textContent = `yt-dlp "${currentUrl}"`;
   if (!videoEntries.length) {
     vidStatusEl.hidden = youtube;
-    vidStatusEl.textContent = blobPlayers
-      ? "Přehrávač načítá stream. Spusťte přehrávání videa - stream bude zachycen automaticky."
-      : "Žádná videa zatím nenalezena. Pokud stránka obsahuje přehrávač, spusťte přehrávání.";
+    setStatus(vidStatusEl, blobPlayers ? "blobPlayer" : "noVideos");
     return;
   }
   vidStatusEl.hidden = true;
@@ -648,6 +651,7 @@ function fillSettingsForm() {
   f.minImageSize.value = settings.minImageSize;
   f.skipNoise.checked = settings.skipNoise;
   f.videoBadge.checked = settings.videoBadge;
+  f.language.value = settings.language;
 }
 
 function readSettingsForm() {
@@ -660,16 +664,19 @@ function readSettingsForm() {
     minImageSize: Number.isFinite(minSize) ? Math.max(0, minSize) : DEFAULT_SETTINGS.minImageSize,
     skipNoise: f.skipNoise.checked,
     videoBadge: f.videoBadge.checked,
+    language: f.language.value || DEFAULT_SETTINGS.language,
   };
 }
 
 function updatePathPreview() {
-  pathPreviewEl.textContent = downloadPath(settings, currentHost, currentTitle, "01_obrazek.jpg");
+  pathPreviewEl.textContent = downloadPath(settings, currentHost, currentTitle, t("sampleImage"));
 }
 
 function applySettings(next) {
   if (next.minImageSize !== settings.minImageSize || next.skipNoise !== settings.skipNoise) filtersChanged = true;
+  const languageChanged = next.language !== settings.language;
   settings = next;
+  if (languageChanged) applyLanguage();
   updatePathPreview();
   // Debounced: storage.sync limits write frequency and typing fires on every key.
   clearTimeout(saveTimer);
@@ -677,6 +684,14 @@ function applySettings(next) {
     saveTimer = null;
     saveSettings(settings);
   }, 300);
+}
+
+// Re-translates static texts and redraws the lists, which build their texts with t().
+function applyLanguage() {
+  setLanguage(settings.language);
+  applyI18n();
+  if (currentItems.length) render(currentItems);
+  if (videoEntries.length) renderVideos();
 }
 
 settingsForm.addEventListener("input", () => applySettings(readSettingsForm()));
@@ -711,7 +726,7 @@ let activePanel = "images";
 function showPanel(name) {
   const leavingSettings = activePanel === "settings" && name !== "settings";
   activePanel = name;
-  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.panel === name));
+  document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.panel === name));
   document.querySelectorAll(".panel").forEach((p) => (p.hidden = p.id !== name));
   openSettingsBtn.classList.toggle("active", name === "settings");
   if (leavingSettings && filtersChanged) {
@@ -720,7 +735,7 @@ function showPanel(name) {
   }
 }
 
-document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showPanel(t.dataset.panel)));
+document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => showPanel(tab.dataset.panel)));
 
 const FRAME_TIMEOUT = 4000;
 
@@ -747,16 +762,17 @@ async function runInPage(tabId, func, args) {
 
 async function scan() {
   statusEl.hidden = false;
-  statusEl.textContent = "Skenuji stránku…";
+  setStatus(statusEl, "scanningPage");
   gridEl.innerHTML = "";
   toolbarEl.hidden = true;
   vidStatusEl.hidden = false;
-  vidStatusEl.textContent = "Skenuji stránku…";
+  setStatus(vidStatusEl, "scanningPage");
   vidListEl.innerHTML = "";
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.id) {
-    statusEl.textContent = vidStatusEl.textContent = "Nelze najít záložku.";
+    setStatus(statusEl, "noTab");
+    setStatus(vidStatusEl, "noTab");
     return;
   }
   currentTabId = tab.id;
@@ -803,7 +819,7 @@ async function scan() {
       drmPlayers += r.drmPlayers;
     }
   } catch (e) {
-    statusEl.textContent = "Na této stránce nelze skenovat.";
+    setStatus(statusEl, "cannotScan");
   }
   imgCountEl.textContent = imageItems.length ? `(${imageItems.length})` : "";
 
@@ -821,5 +837,7 @@ downloadAllBtn.addEventListener("click", () => {
 
 loadSettings().then((s) => {
   settings = s;
+  setLanguage(settings.language);
+  applyI18n();
   scan();
 });
