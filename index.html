@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>VytáhniTo - dokumentace</title>
-<meta name="description" content="VytáhniTo je rozšíření pro Chrome, které vytáhne všechny obrázky ze stránky - i ty zabezpečené proti stažení." />
+<meta name="description" content="VytáhniTo je rozšíření pro Chrome, které vytáhne všechny obrázky a videa ze stránky - i ty zabezpečené proti stažení." />
 <link rel="icon" type="image/png" href="logo.png" />
 <style>
   :root {
@@ -151,7 +151,7 @@
     <img src="logo.png" alt="Logo VytáhniTo" />
     <div>
       <h1>VytáhniTo</h1>
-      <p class="tagline">Rozšíření pro Chrome, které vytáhne všechny obrázky ze stránky - i ty zabezpečené proti stažení.</p>
+      <p class="tagline">Rozšíření pro Chrome, které vytáhne všechny obrázky a videa ze stránky - i ty zabezpečené proti stažení.</p>
     </div>
   </header>
 
@@ -169,6 +169,11 @@
       mřížce, odkud je možné obrázky otevřít, zkopírovat jejich adresu, nebo
       je rovnou stáhnout.
     </p>
+    <p>
+      Na záložce <strong>Videa</strong> funguje podobně jako VideoDownloadHelper:
+      sleduje síťový provoz stránky a zachytí přehrávaná videa a streamy.
+      Počet nalezených médií se zobrazuje přímo na ikoně rozšíření.
+    </p>
   </section>
 
   <section>
@@ -178,6 +183,10 @@
       <li><strong>Filtr</strong> - přeskakuje malé obrázky a vše, co vypadá jako logo, ikona nebo sledovací pixel.</li>
       <li><strong>Výběr nejlepší kvality</strong> - pokud se stejný obrázek objeví vícekrát, ponechá se jeho nejkvalitnější varianta.</li>
       <li><strong>Stáhnout vše</strong> - jedním kliknutím stáhne všechny nalezené obrázky a uspořádá je do složky podle domény.</li>
+      <li><strong>Videa</strong> - zachytí přímé soubory (MP4, WebM, MP3…) i <strong>HLS</strong> streamy (<code>.m3u8</code>). U HLS lze vybrat kvalitu; segmenty se stáhnou, případně dešifrují (AES-128) a spojí do jednoho souboru <code>.ts</code> / <code>.mp4</code>.</li>
+      <li><strong>DASH a DRM</strong> - streamy <code>.mpd</code> a obsah chráněný DRM stáhnout nelze, jejich URL lze ale zkopírovat (např. pro yt-dlp).</li>
+      <li><strong>YouTube</strong> - není podporován (stejně jako u VideoDownloadHelperu v Chromu), protože video posílá po malých kouscích chráněných tokeny. Rozšíření místo toho nabídne příkaz pro <code>yt-dlp</code> ke zkopírování.</li>
+      <li><strong>Nastavení</strong> - pod ikonou ⚙: hlavní složka, rozdělení do složek podle webu (<code>VytahniTo/YouTube/…</code>), podle stránky (<code>VytahniTo/iDNES/název stránky/…</code>) nebo vůbec, dotaz kam uložit, minimální velikost obrázků, filtr log a ikon a počet videí na ikoně.</li>
       <li><strong>Rychlé akce</strong> - u každého obrázku lze jej otevřít v nové záložce, zkopírovat URL nebo stáhnout jednotlivě.</li>
     </ul>
   </section>
@@ -199,6 +208,7 @@
       <li>Klikněte na ikonu VytáhniTo v panelu rozšíření - stránka se automaticky prohledá.</li>
       <li>V mřížce najetím myší na obrázek zobrazíte akce: otevřít, stáhnout, kopírovat URL.</li>
       <li>Tlačítkem <strong>Stáhnout vše</strong> stáhnete všechny nalezené obrázky najednou.</li>
+      <li>Na záložce <strong>Videa</strong> vyberte kvalitu a klikněte na <strong>Stáhnout</strong>. Pokud video v seznamu chybí, spusťte jeho přehrávání - stream se zachytí automaticky.</li>
       <li>Tlačítko <strong>↻</strong> v hlavičce spustí sken znovu (např. po dynamickém načtení obsahu).</li>
     </ol>
   </section>
@@ -212,8 +222,11 @@
       <tbody>
         <tr><td><code>activeTab</code></td><td>Přístup k aktivní záložce v okamžiku kliknutí na rozšíření.</td></tr>
         <tr><td><code>scripting</code></td><td>Vložení skenovacího skriptu do prohlížené stránky.</td></tr>
-        <tr><td><code>downloads</code></td><td>Uložení nalezených obrázků na disk.</td></tr>
-        <tr><td><code>clipboardWrite</code></td><td>Kopírování URL adres obrázků do schránky.</td></tr>
+        <tr><td><code>downloads</code></td><td>Uložení nalezených obrázků a videí na disk.</td></tr>
+        <tr><td><code>clipboardWrite</code></td><td>Kopírování URL adres obrázků a videí do schránky.</td></tr>
+        <tr><td><code>webRequest</code> + přístup ke všem webům</td><td>Zachycení video streamů, které stránka načítá.</td></tr>
+        <tr><td><code>storage</code></td><td>Zapamatování nalezených videí pro danou záložku a uložení nastavení.</td></tr>
+        <tr><td><code>offscreen</code></td><td>Spojení segmentů HLS streamu do jednoho souboru na pozadí.</td></tr>
       </tbody>
     </table>
   </section>
@@ -228,7 +241,11 @@
         <tr><td><code>manifest.json</code></td><td>Definice rozšíření (Manifest V3), ikony a oprávnění.</td></tr>
         <tr><td><code>popup.html</code></td><td>Rozložení vyskakovacího okna rozšíření.</td></tr>
         <tr><td><code>popup.css</code></td><td>Vzhled vyskakovacího okna.</td></tr>
-        <tr><td><code>popup.js</code></td><td>Logika skenování stránky, vykreslení mřížky a stahování.</td></tr>
+        <tr><td><code>popup.js</code></td><td>Logika skenování stránky, vykreslení obrázků a videí a stahování.</td></tr>
+        <tr><td><code>background.js</code></td><td>Service worker - zachytává video požadavky a řídí stahování HLS.</td></tr>
+        <tr><td><code>offscreen.html</code>, <code>offscreen.js</code></td><td>Stažení, dešifrování a spojení segmentů HLS streamu.</td></tr>
+        <tr><td><code>settings.js</code></td><td>Nastavení, názvy webů pro složky a skládání cest ke stažení.</td></tr>
+        <tr><td><code>m3u8.js</code></td><td>Parser HLS playlistů.</td></tr>
         <tr><td><code>icons/</code></td><td>Ikony rozšíření v různých velikostech.</td></tr>
       </tbody>
     </table>

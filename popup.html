@@ -9,17 +9,76 @@
   <header>
     <img src="icons/icon32.png" alt="" id="logo" />
     <h1>VytáhniTo</h1>
-    <button id="rescan" title="Znovu skenovat">↻</button>
+    <button id="rescan" class="icon-btn" title="Znovu skenovat">↻</button>
+    <button id="openSettings" class="icon-btn" title="Nastavení">⚙</button>
   </header>
 
-  <div id="toolbar" hidden>
-    <span id="count"></span>
-    <button id="downloadAll">Stáhnout vše</button>
-  </div>
+  <nav id="tabs">
+    <button class="tab active" data-panel="images">Obrázky <span id="imgCount"></span></button>
+    <button class="tab" data-panel="videos">Videa <span id="vidCount"></span></button>
+  </nav>
 
-  <div id="status">Skenuji...</div>
-  <div id="grid"></div>
+  <section id="images" class="panel">
+    <div id="toolbar" hidden>
+      <span id="count"></span>
+      <button id="downloadAll">Stáhnout vše</button>
+    </div>
+    <div id="status">Skenuji...</div>
+    <div id="grid"></div>
+  </section>
 
+  <section id="videos" class="panel" hidden>
+    <div id="vidNotice" hidden>
+      <p>YouTube posílá video po malých kouscích (obraz a zvuk zvlášť) chráněných tokeny,
+        takže ho rozšíření v prohlížeči stáhnout neumí. Použijte
+        <a href="https://github.com/yt-dlp/yt-dlp" target="_blank">yt-dlp</a>:</p>
+      <div class="cmd">
+        <code id="ytCmd"></code>
+        <button id="copyYtCmd" title="Kopírovat příkaz">⧉</button>
+      </div>
+    </div>
+    <div id="vidStatus">Skenuji...</div>
+    <div id="vidList"></div>
+  </section>
+
+  <section id="settings" class="panel" hidden>
+    <form id="settingsForm">
+      <h2>Ukládání</h2>
+      <label class="field">
+        <span>Hlavní složka</span>
+        <input type="text" name="rootFolder" placeholder="(přímo do Stažených souborů)" />
+      </label>
+
+      <div class="field">
+        <span>Rozdělit do složek</span>
+        <label class="option"><input type="radio" name="subfolder" value="site" /> Podle webu <small>YouTube, iDNES…</small></label>
+        <label class="option"><input type="radio" name="subfolder" value="page" /> Každou stránku zvlášť <small>web / název stránky</small></label>
+        <label class="option"><input type="radio" name="subfolder" value="none" /> Nerozdělovat</label>
+      </div>
+
+      <div class="path-preview">Uloží se jako: <code id="pathPreview"></code></div>
+
+      <label class="option">
+        <input type="checkbox" name="saveAs" /> Ptát se, kam uložit
+        <small>(jen u jednotlivých souborů, ne u „Stáhnout vše“)</small>
+      </label>
+
+      <h2>Obrázky</h2>
+      <label class="field inline">
+        <span>Minimální velikost</span>
+        <input type="number" name="minImageSize" min="0" max="4000" step="10" /> px
+      </label>
+      <label class="option"><input type="checkbox" name="skipNoise" /> Skrývat loga, ikony a obrázky z hlavičky a patičky</label>
+
+      <h2>Videa</h2>
+      <label class="option"><input type="checkbox" name="videoBadge" /> Zobrazovat počet nalezených videí na ikoně</label>
+
+      <button type="button" id="resetSettings">Obnovit výchozí</button>
+    </form>
+  </section>
+
+  <script src="settings.js"></script>
+  <script src="m3u8.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
