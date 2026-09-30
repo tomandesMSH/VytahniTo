@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VytáhniTo - dokumentace</title>
+<meta name="description" content="VytáhniTo je rozšíření pro Chrome, které vytáhne všechny obrázky ze stránky - i ty zabezpečené proti stažení." />
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #1e1f22;
+    --bg-panel: #2a2b2e;
+    --border: #333;
+    --text: #eee;
+    --text-dim: #aaa;
+    --accent: #3a6df0;
+    --accent-hover: #2f5bd0;
+    --code-bg: #17181a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  a { color: var(--accent); }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  header.hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 48px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  header.hero img {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+  }
+
+  header.hero h1 {
+    margin: 0 0 4px;
+    font-size: 28px;
+  }
+
+  header.hero p.tagline {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 15px;
+  }
+
+  section { margin-bottom: 40px; }
+
+  h2 {
+    font-size: 20px;
+    margin: 0 0 16px;
+  }
+
+  .preview {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  ul.features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 10px;
+  }
+
+  ul.features li {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+
+  ul.features li strong { color: #fff; }
+
+  ol.steps {
+    padding-left: 20px;
+    display: grid;
+    gap: 8px;
+  }
+
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  th {
+    color: var(--text-dim);
+    font-weight: 600;
+    background: #232427;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  footer .dedication {
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <img src="logo.png" alt="Logo VytáhniTo" />
+    <div>
+      <h1>VytáhniTo</h1>
+      <p class="tagline">Rozšíření pro Chrome, které vytáhne všechny obrázky ze stránky - i ty zabezpečené proti stažení.</p>
+    </div>
+  </header>
+
+  <section>
+    <img class="preview" src="preview.png" alt="Náhled rozšíření VytáhniTo" />
+  </section>
+
+  <section>
+    <h2>O čem to je</h2>
+    <p>
+      VytáhniTo je jednoduché rozšíření pro prohlížeče založené na Chromiu.
+      Po kliknutí na ikonu prohledá aktuální stránku a najde všechny reálné
+      obrázky - včetně těch, které web schovává za lazy-loading, CSS pozadí
+      nebo ochranu proti klikání pravým tlačítkem. Výsledek zobrazí v přehledné
+      mřížce, odkud je možné obrázky otevřít, zkopírovat jejich adresu, nebo
+      je rovnou stáhnout.
+    </p>
+  </section>
+
+  <section>
+    <h2>Funkce</h2>
+    <ul class="features">
+      <li><strong>Chytrá extrakce</strong> - prochází <code>&lt;img&gt;</code> prvky (včetně lazy-loaded a <code>srcset</code> variant) i <code>background-image</code>.</li>
+      <li><strong>Filtr</strong> - přeskakuje malé obrázky a vše, co vypadá jako logo, ikona nebo sledovací pixel.</li>
+      <li><strong>Výběr nejlepší kvality</strong> - pokud se stejný obrázek objeví vícekrát, ponechá se jeho nejkvalitnější varianta.</li>
+      <li><strong>Stáhnout vše</strong> - jedním kliknutím stáhne všechny nalezené obrázky a uspořádá je do složky podle domény.</li>
+      <li><strong>Rychlé akce</strong> - u každého obrázku lze jej otevřít v nové záložce, zkopírovat URL nebo stáhnout jednotlivě.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Instalace</h2>
+    <ol class="steps">
+      <li>Naklonujte nebo stáhněte tento repozitář.</li>
+      <li>V prohlížeči otevřete <code>chrome://extensions</code>.</li>
+      <li>Zapněte <strong>Vývojářský režim</strong> (Developer mode).</li>
+      <li>Klikněte na <strong>Načíst rozbalené</strong> (Load unpacked) a vyberte složku projektu.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Použití</h2>
+    <ol class="steps">
+      <li>Otevřete stránku, ze které chcete stáhnout obrázky.</li>
+      <li>Klikněte na ikonu VytáhniTo v panelu rozšíření - stránka se automaticky prohledá.</li>
+      <li>V mřížce najetím myší na obrázek zobrazíte akce: otevřít, stáhnout, kopírovat URL.</li>
+      <li>Tlačítkem <strong>Stáhnout vše</strong> stáhnete všechny nalezené obrázky najednou.</li>
+      <li>Tlačítko <strong>↻</strong> v hlavičce spustí sken znovu (např. po dynamickém načtení obsahu).</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Oprávnění</h2>
+    <table>
+      <thead>
+        <tr><th>Oprávnění</th><th>K čemu slouží</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>activeTab</code></td><td>Přístup k aktivní záložce v okamžiku kliknutí na rozšíření.</td></tr>
+        <tr><td><code>scripting</code></td><td>Vložení skenovacího skriptu do prohlížené stránky.</td></tr>
+        <tr><td><code>downloads</code></td><td>Uložení nalezených obrázků na disk.</td></tr>
+        <tr><td><code>clipboardWrite</code></td><td>Kopírování URL adres obrázků do schránky.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Struktura projektu</h2>
+    <table>
+      <thead>
+        <tr><th>Soubor</th><th>Účel</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>manifest.json</code></td><td>Definice rozšíření (Manifest V3), ikony a oprávnění.</td></tr>
+        <tr><td><code>popup.html</code></td><td>Rozložení vyskakovacího okna rozšíření.</td></tr>
+        <tr><td><code>popup.css</code></td><td>Vzhled vyskakovacího okna.</td></tr>
+        <tr><td><code>popup.js</code></td><td>Logika skenování stránky, vykreslení mřížky a stahování.</td></tr>
+        <tr><td><code>icons/</code></td><td>Ikony rozšíření v různých velikostech.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    <h2>Věnování</h2>
+    <p class="dedication">
+      Tento projekt je věnován mému učiteli, kterému byl zablokován pokus
+      o kliknutí pravým tlačítkem myši, aby zvětšil obrázek.
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
