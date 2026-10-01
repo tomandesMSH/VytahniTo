@@ -462,6 +462,17 @@ header .icon-btn.active {
   background: #2f5bd0;
 }
 
+#settingsForm .made-with {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: #777;
+  text-align: center;
+}
+
+#settingsForm .made-with a {
+  color: #6f94f5;
+}
+
 .badge-drm { background: #c0392b; }
 
 .video .progress.warn {
