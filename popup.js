@@ -168,6 +168,7 @@ const gridEl = document.getElementById("grid");
 const toolbarEl = document.getElementById("toolbar");
 const countEl = document.getElementById("count");
 const rescanBtn = document.getElementById("rescan");
+const trashAllBtn = document.getElementById("trashAll");
 const downloadAllBtn = document.getElementById("downloadAll");
 
 // Status texts keep their i18n key so a language switch re-translates them.
@@ -519,6 +520,12 @@ function renderVideoRow(entry, index) {
   name.className = "vname";
   name.textContent = displayName(entry);
   name.title = entry.url;
+  if (entry.current) {
+    const nowPlaying = document.createElement("span");
+    nowPlaying.className = "now-playing";
+    nowPlaying.textContent = t("nowPlaying");
+    name.appendChild(nowPlaying);
+  }
   body.appendChild(name);
 
   const pl = entry.playlist;
@@ -992,6 +999,17 @@ async function scan() {
 }
 
 rescanBtn.addEventListener("click", scan);
+trashAllBtn.addEventListener("click", () => {
+  // Wipe the service worker's sniffed-media state for this tab too, not just the popup's own view -
+  // otherwise the very next touch (still playing in the background) would just resurrect everything.
+  if (currentTabId !== null) {
+    chrome.runtime.sendMessage({ target: "background", type: "clear-all", tabId: currentTabId });
+  }
+  currentItems = [];
+  render(currentItems);
+  videoEntries = [];
+  renderVideos();
+});
 downloadAllBtn.addEventListener("click", () => {
   currentItems.forEach((item, index) => {
     setTimeout(() => downloadItem(item, index), index * 150);

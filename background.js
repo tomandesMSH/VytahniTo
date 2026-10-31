@@ -412,6 +412,9 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.target !== "background") return;
   switch (msg.type) {
+    case "clear-all":
+      clearTab(msg.tabId);
+      break;
     case "hls-start":
       queue = queue
         .then(async () => {

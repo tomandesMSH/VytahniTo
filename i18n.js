@@ -4,6 +4,7 @@
 const MESSAGES = {
   cs: {
     rescan: "Znovu skenovat",
+    trashAll: "Vymazat vše nalezené na této kartě",
     settings: "Nastavení",
     tabImages: "Obrázky",
     tabVideos: "Videa",
@@ -51,6 +52,7 @@ const MESSAGES = {
     sortName: "Podle názvu",
     sortSize: "Podle velikosti",
     noAudioCaptured: "Zvuková stopa nebyla zachycena (video se nejspíš přehrávalo ztlumené)",
+    nowPlaying: "NYNÍ HRAJE",
     ffmpegSetupLabel: "Slučování zvuku a videa (ffmpeg)",
     ffmpegSetupHint:
       "Pro sloučení odděleného videa a zvuku (např. z Instagramu) do jednoho souboru potřebuje rozšíření ffmpeg.wasm, který není součástí balíčku. Tlačítko stáhne instalační Python skript do Stažených souborů - spusť ho (python setup_ffmpeg.py) ve složce rozšíření a pak rozšíření reloadni.",
@@ -85,6 +87,7 @@ const MESSAGES = {
   },
   en: {
     rescan: "Scan again",
+    trashAll: "Clear everything found on this tab",
     settings: "Settings",
     tabImages: "Images",
     tabVideos: "Videos",
@@ -132,6 +135,7 @@ const MESSAGES = {
     sortName: "By name",
     sortSize: "By size",
     noAudioCaptured: "No audio track was captured (the video was probably played muted)",
+    nowPlaying: "NOW PLAYING",
     ffmpegSetupLabel: "Audio+video merging (ffmpeg)",
     ffmpegSetupHint:
       "Merging separate video and audio (e.g. from Instagram) into one file needs ffmpeg.wasm, which isn't bundled. This downloads a Python setup script to your Downloads folder - run it (python setup_ffmpeg.py) from the extension's folder, then reload the extension.",

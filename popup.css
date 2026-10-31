@@ -213,12 +213,27 @@ header .icon-btn.active {
   border-radius: 6px;
   padding: 6px;
   border: 1px solid transparent;
+  min-width: 0; /* a grid item defaults to min-width: auto, which would widen the row (and the
+                   popup, forcing a horizontal scrollbar) to fit its widest child's content */
 }
 
 /* The clip currently playing on the page, matched by duration against the live <video> element. */
 .video-current {
-  background: #3a2020;
-  border-color: #e63946;
+  background: #1d2a40;
+  border-color: #3a6df0;
+}
+
+.now-playing {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: #cfe0ff;
+  background: #3a6df0;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
 .video .thumb {
@@ -247,9 +262,7 @@ header .icon-btn.active {
 }
 
 .video .vname {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere; /* wrap the full name across lines instead of clipping it */
   font-size: 12px;
 }
 
