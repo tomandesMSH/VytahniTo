@@ -1,0 +1,4 @@
+# ffmpeg.wasm (~31 MB) - fetched by setup_ffmpeg.py instead of being committed
+vendor/ffmpeg/
+
+__pycache__/

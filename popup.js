@@ -101,11 +101,15 @@ function extractVideos() {
   const found = new Map();
   let blobPlayers = 0;
   let drmPlayers = 0;
+  // blob/MSE players (Instagram etc.) hide their real URL behind an opaque blob: src, but the element
+  // itself still knows its duration and - via a canvas grab of the current frame - what it looks like.
+  const blobPlayerInfo = [];
 
   function add(url, info) {
     if (!url) return;
     if (url.startsWith("blob:") || url.startsWith("mediasource:")) {
       blobPlayers++;
+      if (info && info.duration) blobPlayerInfo.push({ duration: info.duration, poster: info.snapshot || "" });
       return;
     }
     let abs;
@@ -120,12 +124,25 @@ function extractVideos() {
 
   document.querySelectorAll("video, audio").forEach((v) => {
     if (v.mediaKeys) drmPlayers++; // Encrypted Media Extensions in use = DRM (Widevine/PlayReady)
+    let snapshot = "";
+    if (v.tagName === "VIDEO" && v.readyState >= 2 && v.videoWidth && v.videoHeight) {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = v.videoWidth;
+        canvas.height = v.videoHeight;
+        canvas.getContext("2d").drawImage(v, 0, 0, canvas.width, canvas.height);
+        snapshot = canvas.toDataURL("image/jpeg", 0.6);
+      } catch (e) {
+        snapshot = ""; // tainted canvas or decode error - just skip the thumbnail
+      }
+    }
     const info = {
       width: v.videoWidth || 0,
       height: v.videoHeight || 0,
       duration: isFinite(v.duration) ? v.duration : 0,
       poster: v.poster || "",
       audioOnly: v.tagName === "AUDIO",
+      snapshot,
     };
     add(v.currentSrc || v.src, info);
     v.querySelectorAll("source[src]").forEach((s) => add(s.getAttribute("src"), info));
@@ -143,7 +160,7 @@ function extractVideos() {
     if (MEDIA_LINK.test(a.href)) add(a.href, {});
   });
 
-  return { items: Array.from(found.values()), blobPlayers, drmPlayers };
+  return { items: Array.from(found.values()), blobPlayers, drmPlayers, blobPlayerInfo };
 }
 
 const statusEl = document.getElementById("status");
@@ -250,6 +267,8 @@ const vidCountEl = document.getElementById("vidCount");
 const vidNoticeEl = document.getElementById("vidNotice");
 const drmNoticeEl = document.getElementById("drmNotice");
 const ytCmdEl = document.getElementById("ytCmd");
+const vidToolbarEl = document.getElementById("vidToolbar");
+const vidSortEl = document.getElementById("vidSort");
 
 document.getElementById("copyYtCmd").addEventListener("click", () => navigator.clipboard.writeText(ytCmdEl.textContent));
 
@@ -258,7 +277,9 @@ let currentUrl = "";
 let domVideos = [];
 let blobPlayers = 0;
 let drmPlayers = 0;
+let blobPlayerInfo = [];
 let videoEntries = [];
+let videoSortMode = "default";
 let jobs = {};
 const playlists = new Map(); // hls url -> Promise<parsed playlist | null>
 const selectedVariant = new Map(); // entry url -> variant index
@@ -295,9 +316,12 @@ function kindOf(url, mime) {
 }
 
 function fileExt(entry) {
+  // An audio track can sit at a URL path ending in .mp4 (Instagram serves DASH audio that way) -
+  // trust the real mime over the misleading path extension whenever one is known.
+  if (entry.mime && EXT_BY_MIME[entry.mime]) return EXT_BY_MIME[entry.mime];
   const m = urlPath(entry.url).match(/\.([a-z0-9]{2,4})$/i);
   if (m) return m[1].toLowerCase();
-  return EXT_BY_MIME[entry.mime] || (entry.audioOnly ? "mp3" : "mp4");
+  return entry.audioOnly ? "mp3" : "mp4";
 }
 
 function formatSize(bytes) {
@@ -360,7 +384,64 @@ async function buildVideoEntries() {
     merged.set(item.url, { kind: kindOf(item.url, ""), mime: "", size: 0, ...existing, ...item });
   }
 
-  const entries = Array.from(merged.values());
+  let entries = Array.from(merged.values());
+
+  // Instagram's sniffer can pick up clips the user isn't even watching (aggressive preloading of
+  // neighbouring stories and unrelated Reels). We used to hide anything that didn't match the
+  // playing clip's duration, but that sometimes guessed wrong and hid the one the user actually
+  // wanted - so leave everything in the list, and instead mark the match as "current" so it's
+  // obviously the one actually on screen (highlighted + a frame snapshot for a thumbnail).
+  if (blobPlayerInfo.length) {
+    const DURATION_TOLERANCE = 0.75;
+    const matchingPlayer = (e) =>
+      e.igDuration == null
+        ? null
+        : blobPlayerInfo.find((p) => Math.abs(p.duration - e.igDuration) <= DURATION_TOLERANCE);
+    for (const e of entries) {
+      const player = matchingPlayer(e);
+      if (player) {
+        e.current = true;
+        if (player.poster) e.poster = player.poster;
+      }
+    }
+  }
+
+  // Instagram often splits the matched clip into separate video-only and audio-only files (DASH) -
+  // pair them up so there's one entry with one "Download" that merges them into a real a/v mp4,
+  // instead of two confusing half-files the user has to stitch together themselves.
+  {
+    const igEntries = entries.filter((e) => e.ig);
+    const pairedUrls = new Set();
+    const pairs = [];
+    for (const v of igEntries) {
+      if (v.igRole === "audio" || pairedUrls.has(v.url)) continue;
+      const a = igEntries.find(
+        (x) => x.igRole === "audio" && !pairedUrls.has(x.url) && x.igDuration != null && x.igDuration === v.igDuration
+      );
+      if (!a) continue;
+      pairedUrls.add(v.url);
+      pairedUrls.add(a.url);
+      pairs.push({
+        url: v.url, // stable key for this pair (also used as the merge job id)
+        kind: "ig-pair",
+        videoUrl: v.url,
+        audioUrl: a.url,
+        mime: "video/mp4",
+        size: (v.size || 0) + (a.size || 0),
+        duration: v.igDuration,
+        poster: v.poster || a.poster || "",
+        ig: true,
+        current: !!(v.current || a.current),
+        ts: Math.max(v.ts || 0, a.ts || 0),
+        firstSeen: Math.min(v.firstSeen || v.ts || 0, a.firstSeen || a.ts || 0),
+      });
+    }
+    if (pairs.length) {
+      entries = entries.filter((e) => !pairedUrls.has(e.url));
+      entries.push(...pairs);
+    }
+  }
+
   await Promise.all(
     entries.filter((e) => e.kind === "hls").map(async (e) => (e.playlist = await loadPlaylist(e.url)))
   );
@@ -376,7 +457,7 @@ async function buildVideoEntries() {
 
   const rank = (e) => {
     if (e.kind === "hls") return e.playlist && e.playlist.type === "master" ? 0 : 1;
-    return e.kind === "file" ? 2 : 3;
+    return e.kind === "file" || e.kind === "ig-pair" ? 2 : 3;
   };
   return entries
     .filter((e) => !children.has(e.url))
@@ -418,7 +499,7 @@ function cancelHlsDownload(entry) {
 
 function renderVideoRow(entry, index) {
   const row = document.createElement("div");
-  row.className = "video";
+  row.className = entry.current ? "video video-current" : "video";
 
   const thumb = document.createElement("div");
   thumb.className = "thumb";
@@ -445,15 +526,15 @@ function renderVideoRow(entry, index) {
   const details = [];
   if (entry.width && entry.height) details.push(`${entry.width}×${entry.height}`);
   details.push(formatSize(entry.size));
-  details.push(formatDuration(entry.duration || (pl && pl.type === "media" ? pl.duration : 0)));
+  details.push(formatDuration(entry.duration || entry.igDuration || (pl && pl.type === "media" ? pl.duration : 0)));
   if (pl && pl.type === "media" && pl.live) details.push(t("live"));
   if (isMaster) details.push(t("qualities", pl.variants.length));
 
   const meta = document.createElement("div");
   meta.className = "vmeta";
   const badge = document.createElement("span");
-  badge.className = "badge badge-" + entry.kind;
-  badge.textContent = entry.kind === "file" ? fileExt(entry).toUpperCase() : entry.kind.toUpperCase();
+  badge.className = "badge badge-" + (entry.kind === "ig-pair" ? "file" : entry.kind);
+  badge.textContent = entry.kind === "ig-pair" ? "MP4" : entry.kind === "file" ? fileExt(entry).toUpperCase() : entry.kind.toUpperCase();
   meta.appendChild(badge);
   const drm = !!(pl && pl.drm);
   if (drm) {
@@ -461,6 +542,16 @@ function renderVideoRow(entry, index) {
     drmBadge.className = "badge badge-drm";
     drmBadge.textContent = "DRM";
     meta.append(" ", drmBadge);
+  }
+  // A standalone (unpaired) Instagram video: no audio track was ever captured for it, usually
+  // because it was browsed with sound off and the player never bothered fetching it. Flag it so
+  // it isn't mistaken for one of the merged video+audio entries, which look identical otherwise.
+  if (entry.kind === "file" && entry.ig && entry.igRole && entry.igRole !== "audio") {
+    const noAudioBadge = document.createElement("span");
+    noAudioBadge.className = "badge badge-noaudio";
+    noAudioBadge.textContent = "🔇";
+    noAudioBadge.title = t("noAudioCaptured");
+    meta.append(" ", noAudioBadge);
   }
   meta.appendChild(document.createTextNode(" " + details.filter(Boolean).join(" · ")));
   body.appendChild(meta);
@@ -550,6 +641,44 @@ function renderVideoRow(entry, index) {
     return row;
   }
 
+  if (entry.kind === "ig-pair") {
+    partialActions.hidden = true; // no partial/retry concept for a one-shot merge
+    let mergeActive = false;
+    dlBtn.addEventListener("click", () => {
+      if (mergeActive) {
+        chrome.runtime.sendMessage({ target: "background", type: "ig-merge-cancel", jobId: entry.url });
+        return;
+      }
+      chrome.runtime.sendMessage({
+        target: "background",
+        type: "ig-merge-start",
+        jobId: entry.url,
+        entryUrl: entry.url,
+        videoUrl: entry.videoUrl,
+        audioUrl: entry.audioUrl,
+        filename: videoBaseName(index),
+        saveAs: settings.saveAs,
+      });
+    });
+
+    const update = () => {
+      const job = jobs[entry.url];
+      mergeActive = !!(job && job.state === "running");
+      dlBtn.textContent = mergeActive ? t("cancel") : t("download");
+      progress.hidden = !job;
+      if (!job) return;
+      progress.classList.toggle("error", job.state === "error");
+      const pct = job.total ? Math.round((job.done / job.total) * 100) : 0;
+      fill.style.width = (job.state === "done" ? 100 : pct) + "%";
+      if (job.state === "error") progressText.textContent = t("error", t(job.error));
+      else if (job.state === "done") progressText.textContent = t("done");
+      else progressText.textContent = `${pct} % (${t("merging")})`;
+    };
+    jobViews.set(entry.url, update);
+    update();
+    return row;
+  }
+
   const jobIds = [entry.url, entry.url + "#audio"];
   const partialIds = () => jobIds.filter((id) => jobs[id] && jobs[id].state === "partial");
   const sendToJobs = (type, ids) => ids.forEach((jobId) => chrome.runtime.sendMessage({ target: "background", type, jobId }));
@@ -598,6 +727,27 @@ function isYouTube(host) {
   return /(^|\.)(youtube\.com|youtu\.be|youtube-nocookie\.com)$/.test(host);
 }
 
+// "default" keeps buildVideoEntries()'s own order (HLS master first, then by size) - the others
+// are plain user-chosen orderings, most useful once sniffing has piled up a lot of candidates.
+function sortedVideoEntries() {
+  const arr = videoEntries.slice();
+  // "newestActivity" uses ts (bumped every time a clip is re-touched/re-detected, so it jumps back
+  // to the top); "newestSeen" uses firstSeen (set once, so a clip's position never moves again).
+  if (videoSortMode === "newestActivity") return arr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  if (videoSortMode === "newestSeen")
+    return arr.sort((a, b) => (b.firstSeen || b.ts || 0) - (a.firstSeen || a.ts || 0));
+  if (videoSortMode === "name")
+    return arr.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { numeric: true }));
+  if (videoSortMode === "size") return arr.sort((a, b) => (b.size || 0) - (a.size || 0));
+  return arr;
+}
+
+vidSortEl.addEventListener("change", () => {
+  videoSortMode = vidSortEl.value;
+  chrome.storage.local.set({ videoSortMode });
+  renderVideos();
+});
+
 function renderVideos() {
   vidListEl.innerHTML = "";
   jobViews.clear();
@@ -607,12 +757,14 @@ function renderVideos() {
   drmNoticeEl.hidden = !drmPlayers || youtube;
   if (youtube) ytCmdEl.textContent = `yt-dlp "${currentUrl}"`;
   if (!videoEntries.length) {
+    vidToolbarEl.hidden = true;
     vidStatusEl.hidden = youtube;
     setStatus(vidStatusEl, blobPlayers ? "blobPlayer" : "noVideos");
     return;
   }
+  vidToolbarEl.hidden = videoEntries.length < 2; // sorting one item isn't useful
   vidStatusEl.hidden = true;
-  videoEntries.forEach((entry, index) => vidListEl.appendChild(renderVideoRow(entry, index)));
+  sortedVideoEntries().forEach((entry, index) => vidListEl.appendChild(renderVideoRow(entry, index)));
 }
 
 let refreshGeneration = 0;
@@ -708,6 +860,15 @@ document.getElementById("resetSettings").addEventListener("click", () => {
   fillSettingsForm();
 });
 
+document.getElementById("downloadFfmpegSetup").addEventListener("click", () => {
+  chrome.downloads.download({
+    url: chrome.runtime.getURL("setup_ffmpeg.py"),
+    filename: "vytahnito_setup_ffmpeg.py",
+    conflictAction: "uniquify",
+    saveAs: false,
+  });
+});
+
 openSettingsBtn.addEventListener("click", () => {
   if (activePanel === "settings") {
     showPanel(panelBeforeSettings);
@@ -791,6 +952,7 @@ async function scan() {
   domVideos = [];
   blobPlayers = 0;
   drmPlayers = 0;
+  blobPlayerInfo = [];
 
   // Network-sniffed media doesn't depend on the page scan, so list it right away.
   const earlyVideos = refreshVideos();
@@ -817,6 +979,7 @@ async function scan() {
       domVideos.push(...r.items);
       blobPlayers += r.blobPlayers;
       drmPlayers += r.drmPlayers;
+      if (r.blobPlayerInfo) blobPlayerInfo.push(...r.blobPlayerInfo);
     }
   } catch (e) {
     setStatus(statusEl, "cannotScan");
@@ -835,7 +998,11 @@ downloadAllBtn.addEventListener("click", () => {
   });
 });
 
-loadSettings().then((s) => {
+Promise.all([chrome.storage.local.get("videoSortMode"), loadSettings()]).then(([{ videoSortMode: saved }, s]) => {
+  if (saved) {
+    videoSortMode = saved;
+    vidSortEl.value = saved;
+  }
   settings = s;
   setLanguage(settings.language);
   applyI18n();

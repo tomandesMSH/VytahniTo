@@ -37,6 +37,16 @@
       </div>
     </div>
     <div id="drmNotice" class="notice" data-i18n="drmNotice" hidden></div>
+    <div id="vidToolbar" hidden>
+      <label for="vidSort" data-i18n="sortLabel"></label>
+      <select id="vidSort">
+        <option value="default" data-i18n="sortDefault"></option>
+        <option value="newestActivity" data-i18n="sortNewestActivity"></option>
+        <option value="newestSeen" data-i18n="sortNewestSeen"></option>
+        <option value="name" data-i18n="sortName"></option>
+        <option value="size" data-i18n="sortSize"></option>
+      </select>
+    </div>
     <div id="vidStatus" data-i18n="scanning"></div>
     <div id="vidList"></div>
   </section>
@@ -78,6 +88,12 @@
 
       <h2 data-i18n="sectionVideos"></h2>
       <label class="option"><input type="checkbox" name="videoBadge" /> <span data-i18n="videoBadge"></span></label>
+
+      <div class="field">
+        <span data-i18n="ffmpegSetupLabel"></span>
+        <small data-i18n="ffmpegSetupHint"></small>
+        <button type="button" id="downloadFfmpegSetup" data-i18n="ffmpegSetupButton"></button>
+      </div>
 
       <button type="button" id="resetSettings" data-i18n="resetSettings"></button>
 
